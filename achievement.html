@@ -19,8 +19,8 @@
       background: #f6f2ef;
       border-radius: 10px;
       box-shadow: 0 1px 4px #0001;
-      width: 180px;
-      padding: 20px 12px;
+      width: 120px;           /* 縮小寬度 */
+      padding: 12px 4px;      /* 縮小內距 */
       text-align: center;
       transition: transform 0.2s;
       position: relative;
@@ -30,67 +30,67 @@
       filter: grayscale(1);
     }
     .achievement img {
-      width: 64px;
-      height: 64px;
-      margin-bottom: 12px;
+      width: 32px;            /* 縮小圖示 */
+      height: 32px;
+      margin-bottom: 8px;     /* 縮小間距 */
     }
     .achievement .title {
-      font-size: 18px;
+      font-size: 15px;        /* 縮小字體 */
       font-weight: bold;
       color: #8b5e3c;
-      margin-bottom: 8px;
+      margin-bottom: 4px;
     }
     .achievement .desc {
-      font-size: 14px;
+      font-size: 12px;        /* 縮小字體 */
       color: #6d4c2b;
-      margin-bottom: 6px;
+      margin-bottom: 4px;
     }
     .achievement .date {
-      font-size: 12px;
+      font-size: 10px;        /* 縮小字體 */
       color: #bfa88c;
     }
     @media (max-width: 600px) {
       .container { padding: 8px; }
       .achievements { gap: 12px; }
-      .achievement { width: 46vw; min-width: 140px; padding: 12px 4px; }
-      .achievement img { width: 44px; height: 44px; }
+      .achievement { width: 38vw; min-width: 80px; padding: 8px 2px; }
+      .achievement img { width: 24px; height: 24px; }
     }
-            /* 統一底部導覽列樣式 */
-            .bottom-nav {
-              position: fixed;
-              bottom: 0;
-              left: 0;
-              width: 100%;
-              background-color: #e0d6cf;
-              display: flex;
-              justify-content: space-around;
-              align-items: center;
-              border-top: 1px solid #ccc;
-              height: 70px;
-              z-index: 999;
-            }
-            .bottom-nav a {
-              text-decoration: none;
-              color: #8b5e3c;
-              font-size: 12px;
-              display: flex;
-              flex-direction: column;
-              align-items: center;
-              gap: 4px;
-              font-weight: 700;
-              font-family: "Noto Serif TC", "Segoe UI", sans-serif;
-            }
-            .bottom-nav img {
-              width: 24px;
-              height: 24px;
-              margin-bottom: 0;
-              display: block;
-            }
-            @media (max-width:520px) {
-              .bottom-nav { height: 64px; }
-              .bottom-nav a { font-size: 11px; }
-              .bottom-nav img { width: 20px; height: 20px; }
-            }
+    /* 統一底部導覽列樣式 */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background-color: #e0d6cf;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      border-top: 1px solid #ccc;
+      height: 70px;
+      z-index: 999;
+    }
+    .bottom-nav a {
+      text-decoration: none;
+      color: #8b5e3c;
+      font-size: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      font-weight: 700;
+      font-family: "Noto Serif TC", "Segoe UI", sans-serif;
+    }
+    .bottom-nav img {
+      width: 24px;
+      height: 24px;
+      margin-bottom: 0;
+      display: block;
+    }
+    @media (max-width:520px) {
+      .bottom-nav { height: 64px; }
+      .bottom-nav a { font-size: 11px; }
+      .bottom-nav img { width: 20px; height: 20px; }
+    }
   </style>
 </head>
 <body>
@@ -188,7 +188,7 @@
       groupContainer.appendChild(achWrap);
     });
   </script>
-      <nav class="bottom-nav" role="navigation" aria-label="底部分頁列">
+  <nav class="bottom-nav" role="navigation" aria-label="底部分頁列">
     <a href="index.html">
       <img src="https://cdn-icons-png.flaticon.com/512/1946/1946488.png" alt="首頁">
       首頁
