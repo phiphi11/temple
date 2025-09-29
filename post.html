@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>發佈貼文</title>
+
+  <!-- 字型 -->
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700&display=swap" rel="stylesheet">
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.3.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.3.1/firebase-firestore.js"></script>
+
+  <style>
+    body {
+      font-family: "Noto Serif TC", serif;
+      background-color: #f4f1ed;
+      margin: 0;
+      padding: 20px;
+      color: #333;
+    }
+
+    h1 {
+      text-align: center;
+      color: #8b5e3c;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 6px;
+    }
+
+    input, textarea, select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 16px;
+      background-color: #fff;
+    }
+
+    button {
+      background-color: #8b5e3c;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      font-size: 16px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .message {
+      margin-top: 20px;
+      color: green;
+      font-weight: bold;
+      text-align: center;
+    }
+
+    #preview img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 8px;
+      margin-top: 10px;
+    }
+    /* 統一底部導覽列樣式 */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background-color: #e0d6cf;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      border-top: 1px solid #ccc;
+      height: 70px;
+      z-index: 999;
+    }
+    .bottom-nav a {
+      text-decoration: none;
+      color: #8b5e3c;
+      font-size: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      font-weight: 700;
+      font-family: "Noto Serif TC", "Segoe UI", sans-serif;
+    }
+    .bottom-nav img {
+      width: 24px;
+      height: 24px;
+      margin-bottom: 0;
+      display: block;
+    }
+    @media (max-width:520px) {
+      .bottom-nav { height: 64px; }
+      .bottom-nav a { font-size: 11px; }
+      .bottom-nav img { width: 20px; height: 20px; }
+    }
+  </style>
+</head>
+<body>
+  <h1>發佈貼文</h1>
+
+  <div class="form-group">
+    <label for="title">標題</label>
+    <input type="text" id="title" placeholder="輸入貼文標題">
+  </div>
+
+  <div class="form-group">
+    <label for="content">內容</label>
+    <textarea id="content" rows="6" placeholder="輸入貼文內容"></textarea>
+  </div>
+
+  <div class="form-group">
+    <label for="photo">照片</label>
+    <input type="file" id="photo" accept="image/*" capture="environment">
+    <small>可拍照或從相簿選擇</small>
+    <div id="preview"></div>
+  </div>
+
+  <div class="form-group">
+    <label for="region-select">選擇地點</label>
+    <select id="region-select" aria-label="選擇地區">
+      <option value="" selected>請選擇地點</option>
+      <option value="臺北大龍峒保安宮">臺北大龍峒保安宮</option>
+      <option value="臺北濟南基督長老教會">臺北濟南基督長老教會</option>
+      <option value="台北清真寺">台北清真寺</option>
+      <option value="臺北臨濟護國禪寺">臺北臨濟護國禪寺</option>
+      <option value="臺北行天宮">臺北行天宮</option>
+      <option value="艋舺龍山寺">艋舺龍山寺</option>
+      <option value="松山慈祐宮">松山慈祐宮</option>
+      <option value="三峽祖師廟">三峽祖師廟</option>
+      <option value="新竹都城隍廟">新竹都城隍廟</option>
+      <option value="鹿港龍山寺">鹿港龍山寺</option>
+      <option value="臺南孔子廟">臺南孔子廟</option>
+      <option value="高雄佛光山寺">高雄佛光山寺</option>
+      <option value="花蓮慈濟文化園區">花蓮慈濟文化園區</option>
+      <option value="澎湖天后宮">澎湖天后宮</option>
+      <!-- 可繼續補上其他地點 -->
+    </select>
+  </div>
+  
+
+  <button onclick="submitPost()">發佈貼文</button>
+  <div class="message" id="message"></div>
+
+  <script>
+    // Firebase 初始化
+    const firebaseConfig = {
+      apiKey: "AIzaSyAeqrJrEn7T3bfeQQnnWBysjF4DdLgBtrA",
+      authDomain: "temple-1db5d.firebaseapp.com",
+      projectId: "temple-1db5d",
+      appId: "685859087975"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // 照片預覽功能
+    const photoInput = document.getElementById('photo');
+    const preview = document.getElementById('preview');
+
+    photoInput.addEventListener('change', function () {
+      const file = this.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          preview.innerHTML = `<img src="${e.target.result}" alt="預覽照片">`;
+        };
+        reader.readAsDataURL(file);
+      } else {
+        preview.innerHTML = "";
+      }
+    });
+
+    // 發佈貼文功能
+    function submitPost() {
+      const title = document.getElementById('title').value.trim();
+      const content = document.getElementById('content').value.trim();
+      const region = document.getElementById('region-select').value;
+      const message = document.getElementById('message');
+
+      if (!title || !content || !region) {
+        message.textContent = "請填寫所有欄位（標題、內容、地點）";
+        message.style.color = "red";
+        return;
+      }
+
+      db.collection("posts").add({
+        title: title,
+        content: content,
+        region: region,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      }).then(() => {
+        message.textContent = "貼文已成功發佈！";
+        message.style.color = "green";
+        document.getElementById('title').value = "";
+        document.getElementById('content').value = "";
+        document.getElementById('region-select').value = "";
+        preview.innerHTML = "";
+        photoInput.value = "";
+      }).catch(error => {
+        message.textContent = "發佈失敗：" + error.message;
+        message.style.color = "red";
+      });
+    }
+  </script>
+      
+      <nav class="bottom-nav">
+    <a href="index.html">
+      <img src="https://cdn-icons-png.flaticon.com/512/1946/1946488.png" alt="首頁">
+      首頁
+    </a>
+    <a href="achievement.html">
+      <img src="https://cdn-icons-png.flaticon.com/512/1828/1828970.png" alt="成就">
+      成就區
+    </a>
+    <a href="notifications.html">
+      <img src="https://cdn-icons-png.flaticon.com/512/1827/1827392.png" alt="通知">
+      通知
+    </a>
+    <a href="settings.html">
+      <img src="https://cdn-icons-png.flaticon.com/512/2099/2099058.png" alt="設定">
+      設定
+    </a>
+  </nav>
+</body>
+</html>

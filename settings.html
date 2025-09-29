@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>設定中心 - 進擊的廟埕</title>
+
+  <!-- 字型 -->
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700&display=swap" rel="stylesheet">
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.3.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.3.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.3.1/firebase-storage.js"></script>
+
+  <style>
+    :root{--accent:#a94438;--text:#333;--bg:#f4f1ed}
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;background:var(--bg);font-family:"Noto Serif TC","Segoe UI",sans-serif;color:var(--text);padding-bottom:90px}
+    header{text-align:center;padding:30px 20px 10px;background:#8b5e3c;color:#fff}
+    .features{display:flex;flex-direction:column;gap:12px;padding:20px;max-width:720px;margin:12px auto}
+    .feature{display:flex;align-items:center;justify-content:space-between;background:#fff;border-radius:12px;padding:12px 16px;box-shadow:0 2px 6px rgba(0,0,0,.08);text-decoration:none;color:var(--text);transition:transform .12s ease,box-shadow .12s ease;cursor:pointer}
+    .feature:hover{transform:translateY(-4px);box-shadow:0 10px 20px rgba(0,0,0,.12)}
+    .feature-left{display:flex;align-items:center;gap:14px}
+    .icon{width:28px;height:28px;flex-shrink:0;fill:var(--accent)}
+    .arrow{width:18px;height:18px;opacity:.6;fill:currentColor}
+    .feature p{margin:0;font-size:16px;font-weight:700;color:var(--text)}
+
+    /* 使用者資訊 */
+    .user-block{display:flex;flex-direction:column;align-items:center;background:transparent;padding:18px;box-shadow:none;text-align:center;border-radius:12px}
+    .user-block-top{width:100%;display:flex;align-items:center;justify-content:center;position:relative;gap:16px}
+    .avatar-btn{border:none;background:transparent;padding:0;border-radius:50%;display:inline-block;line-height:0;cursor:pointer}
+    .avatar-btn:focus{outline:3px solid rgba(169,68,56,.18);outline-offset:4px;border-radius:50%}
+
+    /* container for either img or svg */
+    #settingPhoto{width:100px;height:100px;border-radius:50%;overflow:hidden;background:#fff;border:3px solid rgba(0,0,0,.06);box-sizing:border-box;display:flex;align-items:center;justify-content:center}
+    #settingPhoto img{width:100%;height:100%;object-fit:cover;display:block}
+    #settingPhoto svg{width:100%;height:100%;display:block}
+
+    .user-name-row{display:flex;align-items:center;gap:8px;margin-top:10px}
+    .user-name-row p{margin:0;font-size:18px;font-weight:700}
+    /* 編輯名稱區塊（名稱 + 編輯按鈕） */
+    .name-edit-wrap{display:flex;align-items:center;gap:8px}
+    .edit-name-btn{background:transparent;border:none;padding:4px;border-radius:6px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;color:var(--accent)}
+    .edit-name-btn:hover{background:rgba(169,68,56,0.06)}
+    .name-input{font-size:16px;padding:6px 8px;border:1px solid #ccc;border-radius:6px;width:220px}
+    .name-save-btn{background:var(--accent);color:#fff;border:none;padding:6px 10px;border-radius:6px;cursor:pointer;font-weight:700}
+    .name-cancel-btn{background:transparent;border:1px solid #ccc;padding:6px 10px;border-radius:6px;cursor:pointer}
+
+    .edit-icon-inline{width:18px;height:18px;fill:currentColor}
+    .edit-icon{position:absolute;right:28%;top:8px;width:24px;height:24px;fill:var(--accent);cursor:pointer;opacity:.95;display:none} /* 隱藏舊位置 */
+
+    .logout-row{display:flex;justify-content:center;padding:8px 0;background:transparent;box-shadow:none}
+    .logout-btn{margin-top:0;background:transparent;color:var(--accent);border:2px solid var(--accent);padding:8px 18px;font-size:14px;border-radius:8px;cursor:pointer;font-weight:700;transition:background-color .12s ease,color .12s ease,transform .08s ease}
+    .logout-btn:hover{background:var(--accent);color:white;transform:translateY(-2px)}
+
+    /* 統一底部導覽列樣式 */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background-color: #e0d6cf;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      border-top: 1px solid #ccc;
+      height: 70px;
+      z-index: 999;
+    }
+    .bottom-nav a {
+      text-decoration: none;
+      color: #8b5e3c;
+      font-size: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      font-weight: 700;
+      font-family: "Noto Serif TC", "Segoe UI", sans-serif;
+    }
+    .bottom-nav img {
+      width: 24px;
+      height: 24px;
+      margin-bottom: 0;
+      display: block;
+    }
+    @media (max-width:520px) {
+      .bottom-nav { height: 64px; }
+      .bottom-nav a { font-size: 11px; }
+      .bottom-nav img { width: 20px; height: 20px; }
+    }
+    .hint{margin-top:8px;font-size:13px;color:#666}
+        @media (max-width:520px) {
+      .icon { width: 24px; height: 24px; }
+      .feature p { font-size: 15px; }
+      .bottom-nav { height: 64px; }
+      .bottom-nav a { font-size: 11px; }
+      .bottom-nav img { width: 20px; height: 20px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>設定中心</h1>
+    <p>管理您的帳號與偏好設定</p>
+  </header>
+
+  <section class="features" aria-label="設定項目">
+    <div class="user-block" role="region" aria-label="使用者資訊">
+      <div class="user-block-top">
+        <button id="avatarBtn" class="avatar-btn" aria-label="編輯頭像與名稱" title="編輯頭像與名稱" type="button">
+          <div id="settingPhoto" aria-hidden="false"></div>
+        </button>
+
+        <!-- 名稱與編輯按鈕放在頭像右方 -->
+        <div class="user-name-row" style="flex-direction:column;align-items:flex-start;">
+          <div class="name-edit-wrap" id="nameEditWrap" aria-live="polite">
+            <p id="settingName">使用者</p>
+            <!-- inline edit button（預設可見） -->
+            <button id="editNameBtn" class="edit-name-btn" aria-label="編輯使用者名稱" title="編輯使用者名稱" type="button">
+              <svg class="edit-icon-inline" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1.003 1.003 0 0 0 0-1.42l-2.34-2.34a1.003 1.003 0 0 0-1.42 0l-1.83 1.83 3.75 3.75 1.84-1.82z"/></svg>
+            </button>
+          </div>
+          <p style="margin:8px 0 0;color:#666;font-size:13px">所在城市：臺北市中正區</p>
+        </div>
+
+        <!-- 隱藏的舊編輯筆（保留於 DOM，但隱藏）-->
+        <svg class="edit-icon" viewBox="0 0 24 24" role="img" aria-hidden="true" id="editProfileBtn">
+          <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1.003 1.003 0 0 0 0-1.42l-2.34-2.34a1.003 1.003 0 0 0-1.42 0l-1.83 1.83 3.75 3.75 1.84-1.82z"/>
+        </svg>
+      </div>
+
+      <p class="hint" id="uploadHint">點擊頭像以選取檔案上傳（支援 JPG/PNG，小於 2MB）</p>
+    </div>
+
+    <!-- 將 input 放 off-screen (不可使用 display:none) 以確保 programmatic click 可觸發 -->
+    <input id="avatarInput" type="file" accept="image/*" style="position:absolute; left:-9999px; width:1px; height:1px; overflow:hidden;" />
+
+    <a class="feature" href="terms.html" aria-label="服務條款與隱私權政策">
+      <div class="feature-left">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 13h2v2h-2zm0-8h2v6h-2z"/></svg>
+        <p>服務條款與隱私權政策</p>
+      </div>
+      <svg class="arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 17l5-5-5-5v10z"/></svg>
+    </a>
+
+    <a class="feature" href="report.html" aria-label="錯誤回報">
+      <div class="feature-left">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 4H4c-1.1 0-2 .9-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6c0-1.1-.9-2-2-2zm0 4-8 5L4 8V6l8 5 8-5v2z"/></svg>
+        <p>錯誤回報</p>
+      </div>
+      <svg class="arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 17l5-5-5-5v10z"/></svg>
+    </a>
+
+    <a class="feature" href="contact.html" aria-label="聯絡我們">
+      <div class="feature-left">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.62 10.79a15.053 15.053 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.11-.21c1.21.49 2.53.76 3.88.76a1 1 0 0 1 1 1v3.5a1 1 0 0 1-1 1C10.07 22 2 13.93 2 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.35.27 2.67.76 3.88a1 1 0 0 1-.21 1.11l-2.43 2.8z"/></svg>
+        <p>聯絡我們</p>
+      </div>
+      <svg class="arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 17l5-5-5-5v10z"/></svg>
+    </a>
+
+    <div class="logout-row" role="region" aria-label="登出">
+      <button class="logout-btn" id="logoutSetting">登出</button>
+    </div>
+  </section>
+
+  <nav class="bottom-nav" role="navigation" aria-label="底部分頁列">
+    <a href="index.html"><img src="https://cdn-icons-png.flaticon.com/512/1946/1946488.png" alt="首頁">首頁</a>
+    <a href="achievement.html"><img src="https://cdn-icons-png.flaticon.com/512/1828/1828970.png" alt="成就">成就區</a>
+    <a href="notifications.html"><img src="https://cdn-icons-png.flaticon.com/512/1827/1827392.png" alt="通知">通知</a>
+    <a href="settings.html"><img src="https://cdn-icons-png.flaticon.com/512/2099/2099058.png" alt="設定">設定</a>
+  </nav>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAeqrJrEn7T3bfeQQnnWBysjF4DdLgBtrA",
+      authDomain: "temple-1db5d.firebaseapp.com",
+      projectId: "temple-1db5d",
+      appId: "685859087975"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const storage = firebase.storage();
+
+    const settingPhoto = document.getElementById('settingPhoto');
+    const settingName = document.getElementById('settingName');
+    const logoutSetting = document.getElementById('logoutSetting');
+    const editProfileBtn = document.getElementById('editProfileBtn');
+    const avatarBtn = document.getElementById('avatarBtn');
+    const avatarInput = document.getElementById('avatarInput');
+    const uploadHint = document.getElementById('uploadHint');
+    const editNameBtn = document.getElementById('editNameBtn');
+    const nameEditWrap = document.getElementById('nameEditWrap');
+
+    // person SVG template
+    const personSVG = `
+      <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" role="img">
+        <g fill="none" fill-rule="evenodd">
+          <circle cx="32" cy="16" r="12" fill="#e9e6e3"/>
+          <path d="M18 52c0-8 10-14 14-14s14 6 14 14v2H18v-2z" fill="#e9e6e3"/>
+          <circle cx="32" cy="16" r="12" stroke="rgba(0,0,0,.06)" stroke-width="1"/>
+          <path d="M18 52c0-8 10-14 14-14s14 6 14 14" stroke="rgba(0,0,0,.06)" stroke-width="1" fill="none"/>
+          <path d="M20 44c8-6 16-6 24 0" fill="#f3d7d5"/>
+        </g>
+      </svg>
+    `;
+
+    function showPersonSVG(){ settingPhoto.innerHTML = personSVG; settingPhoto.setAttribute('aria-label','使用者頭像，預設人形圖示'); }
+    function showPhotoUrl(url){ settingPhoto.innerHTML = `<img src="${url}" alt="使用者頭像">`; settingPhoto.setAttribute('aria-label','使用者頭像'); }
+
+    // 初始化 UI：顯示使用者名稱與頭像
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        settingName.textContent = user.displayName || "使用者";
+        if (user.photoURL) showPhotoUrl(user.photoURL); else showPersonSVG();
+      } else {
+        window.location.href = "login.html";
+      }
+    });
+
+    // 開啟檔案選擇（確保 avatarInput 不是 display:none）
+    function openFilePicker(){
+      if (!avatarInput) { alert('找不到檔案選擇器'); return; }
+      try {
+        avatarInput.click();
+      } catch (err) {
+        console.error('file input click error', err);
+        alert('無法開啟檔案選擇器，請手動選擇或嘗試其他瀏覽器');
+      }
+    }
+    avatarBtn.addEventListener('click', openFilePicker);
+    avatarBtn.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openFilePicker(); } });
+
+    // 檔案選擇後處理：預覽 + 上傳到 Firebase Storage + 更新 Auth photoURL
+    avatarInput.addEventListener('change', async (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      const maxMB = 2;
+      if (!file.type.startsWith('image/')) { alert('請選擇圖片檔 (JPG/PNG等)'); return; }
+      if (file.size > maxMB * 1024 * 1024) { alert(`檔案請小於 ${maxMB} MB`); return; }
+
+      const reader = new FileReader();
+      reader.onload = (ev) => { settingPhoto.innerHTML = `<img src="${ev.target.result}" alt="上傳預覽">`; };
+      reader.readAsDataURL(file);
+
+      const user = auth.currentUser;
+      if (!user) { alert('尚未登入，無法上傳'); return; }
+
+      try {
+        uploadHint.textContent = '上傳中...';
+        const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+        const storageRef = storage.ref(`users/${user.uid}/avatar-${Date.now()}.${ext}`);
+        const snapshot = await storageRef.put(file);
+        const downloadURL = await snapshot.ref.getDownloadURL();
+        await user.updateProfile({ photoURL: downloadURL });
+        showPhotoUrl(downloadURL);
+        uploadHint.textContent = '上傳完成';
+      } catch (err) {
+        console.error('avatar upload error', err);
+        alert('上傳失敗，請稍後再試');
+        uploadHint.textContent = '點擊頭像以選取檔案上傳（支援 JPG/PNG，小於 2MB）';
+      } finally {
+        avatarInput.value = '';
+        setTimeout(()=>{ uploadHint.textContent = '點擊頭像以選取檔案上傳（支援 JPG/PNG，小於 2MB）'; }, 2500);
+      }
+    });
+
+    // 編輯名稱：點擊 editNameBtn 轉為編輯狀態（inline）
+    function enterNameEdit(currentName){
+      nameEditWrap.innerHTML = '';
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'name-input';
+      input.value = currentName || '';
+      input.id = 'nameInput';
+      input.setAttribute('aria-label','編輯使用者名稱');
+
+      const saveBtn = document.createElement('button');
+      saveBtn.className = 'name-save-btn';
+      saveBtn.type = 'button';
+      saveBtn.textContent = '儲存';
+      saveBtn.setAttribute('aria-label','儲存使用者名稱');
+
+      const cancelBtn = document.createElement('button');
+      cancelBtn.className = 'name-cancel-btn';
+      cancelBtn.type = 'button';
+      cancelBtn.textContent = '取消';
+      cancelBtn.setAttribute('aria-label','取消編輯名稱');
+
+      nameEditWrap.appendChild(input);
+      nameEditWrap.appendChild(saveBtn);
+      nameEditWrap.appendChild(cancelBtn);
+
+      input.focus();
+      input.select();
+
+      saveBtn.addEventListener('click', async () => {
+        const newName = input.value.trim();
+        if (!newName) { alert('名稱不可為空'); input.focus(); return; }
+        const user = auth.currentUser;
+        if (!user) { alert('尚未登入'); return; }
+        try {
+          saveBtn.disabled = true;
+          cancelBtn.disabled = true;
+          await user.updateProfile({ displayName: newName });
+          settingName.textContent = newName;
+          restoreNameView(newName);
+        } catch (err) {
+          console.error('update displayName error', err);
+          alert('更新名稱失敗，請稍後再試');
+          saveBtn.disabled = false;
+          cancelBtn.disabled = false;
+        }
+      });
+
+      cancelBtn.addEventListener('click', () => {
+        restoreNameView(currentName);
+      });
+
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); saveBtn.click(); }
+        if (e.key === 'Escape') { e.preventDefault(); cancelBtn.click(); }
+      });
+    }
+
+    function restoreNameView(name){
+      nameEditWrap.innerHTML = '';
+      const p = document.createElement('p');
+      p.id = 'settingName';
+      p.textContent = name || '使用者';
+      const btn = document.createElement('button');
+      btn.id = 'editNameBtn';
+      btn.className = 'edit-name-btn';
+      btn.type = 'button';
+      btn.setAttribute('aria-label','編輯使用者名稱');
+      btn.title = '編輯使用者名稱';
+      btn.innerHTML = '<svg class="edit-icon-inline" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1.003 1.003 0 0 0 0-1.42l-2.34-2.34a1.003 1.003 0 0 0-1.42 0l-1.83 1.83 3.75 3.75 1.84-1.82z"/></svg>';
+      nameEditWrap.appendChild(p);
+      nameEditWrap.appendChild(btn);
+      document.getElementById('editNameBtn').addEventListener('click', () => {
+        enterNameEdit(p.textContent);
+      });
+    }
+
+    // 初始綁定：編輯按鈕
+    if (editNameBtn) {
+      editNameBtn.addEventListener('click', () => { enterNameEdit(settingName.textContent); });
+    }
+
+    // 隱藏的舊編輯按鈕也觸發同樣行為
+    if (editProfileBtn) {
+      editProfileBtn.addEventListener('click', () => { enterNameEdit(settingName.textContent); });
+    }
+
+    // 登出
+    logoutSetting.addEventListener('click', () => {
+      auth.signOut().then(()=>{ window.location.href = "login.html"; }).catch(err=>{ console.error(err); alert('登出失敗'); });
+    });
+  </script>
+</body>
+</html>

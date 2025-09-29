@@ -1,0 +1,442 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>寺廟分類卡片（點擊顯示詳情）</title>
+
+  <!-- 字型 -->
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --wood:#7b4b2a;
+      --gold:#d9b24a;
+      --card-bg:#fff8f0;
+      --text:#2b1f1a;
+      --gap:18px;
+      --max-width:1100px;
+      --overlay-bg: rgba(11,10,9,0.6);
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;background:#fbf7f3;font-family:"Noto Serif TC","Segoe UI",serif;color:var(--text)}
+    .container{max-width:var(--max-width);margin:28px auto;padding:0 16px 48px}
+    .temple-cards{display:grid;grid-template-columns:repeat(2,1fr);gap:var(--gap);width:100%}
+    .card{background:linear-gradient(180deg,var(--card-bg),#fbf7f4);border:3px solid rgba(0,0,0,0.06);border-radius:12px;overflow:hidden;box-shadow:0 8px 22px rgba(0,0,0,0.08);display:flex;flex-direction:column;transition:transform .14s ease,box-shadow .14s ease;min-height:240px;cursor:pointer}
+    .card:hover{transform:translateY(-6px);box-shadow:0 20px 40px rgba(0,0,0,0.12)}
+    .card img{width:100%;height:160px;object-fit:cover;display:block;background:#efe6dc}
+    .card-body{padding:14px;display:flex;flex-direction:column;gap:10px;flex:1 1 auto}
+    .badge{display:inline-block;background:linear-gradient(90deg,var(--gold),#caa43a);color:#2b1f1a;padding:6px 10px;border-radius:8px;font-weight:700;font-size:12px;box-shadow:inset 0 -4px 8px rgba(0,0,0,0.04)}
+    .card h4{margin:0;font-size:18px;color:var(--text);line-height:1.2}
+    .card p{margin:0;color:#4b3b32;font-size:14px;line-height:1.45}
+    .meta{margin-top:auto;display:flex;gap:8px;align-items:center;color:#6b564a;font-size:13px}
+    .icon-dot{width:10px;height:10px;background:var(--wood);border-radius:50%}
+
+    @media (max-width:840px){ .temple-cards{grid-template-columns:1fr} .card img{height:140px} }
+    @media (max-width:480px){ .card img{height:130px} .card h4{font-size:16px} .card p{font-size:13px} }
+
+    /* Lightbox / 詳情面板 */
+    .overlay{
+      position:fixed;inset:0;display:none;align-items:flex-start;justify-content:center;padding:28px;z-index:1200;
+      background:var(--overlay-bg);backdrop-filter:blur(4px);
+    }
+    .overlay[aria-hidden="false"]{display:flex}
+    .detail {
+      width:100%;
+      max-width:960px;
+      background:#fff;
+      border-radius:10px;
+      box-shadow:0 30px 80px rgba(0,0,0,0.35);
+      overflow:hidden;
+      transform-origin:top center;
+      animation:slideDown .18s ease;
+      max-height:86vh;
+      display:flex;
+      flex-direction:column;
+    }
+    @keyframes slideDown { from{transform:translateY(-8px) scale(.995);opacity:0} to{transform:none;opacity:1} }
+
+    .detail-media{
+      width:100%;
+      height:360px;
+      background:#eee;
+      position:relative;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      overflow:hidden;
+    }
+    .detail-media img{width:100%;height:100%;object-fit:cover;display:block}
+    .detail-body{
+      padding:20px 22px;
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+      overflow:auto;
+    }
+    .detail-title{
+      display:flex;
+      align-items:flex-start;
+      gap:12px;
+      justify-content:space-between;
+    }
+    .detail-title h2{margin:0;font-size:20px;line-height:1.15}
+    .detail-close{
+      background:transparent;border:none;padding:8px;border-radius:8px;cursor:pointer;color:var(--wood);font-weight:700;font-size:20px;
+    }
+    .detail p{margin:0;color:#3f352f;line-height:1.6;font-size:15px; white-space:pre-wrap}
+    .detail-source{font-size:12px;color:#74615a;margin-top:8px}
+    .detail-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:8px}
+    .btn-muted{background:transparent;border:1px solid #ccc;padding:8px 12px;border-radius:8px;cursor:pointer}
+    .btn-primary{background:var(--wood);color:#fff;border:none;padding:8px 12px;border-radius:8px;cursor:pointer}
+
+    /* Responsive adjustments */
+    @media (max-width:800px){
+      .detail-media{height:240px}
+      .detail{max-width:92vw}
+    }
+    @media (max-width:420px){
+      .detail-media{height:200px}
+      .detail-body{padding:14px}
+      .detail-title h2{font-size:18px}
+    }
+
+    .caption-top{
+      position:absolute;left:16px;top:16px;background:rgba(0,0,0,0.45);color:#fff;padding:8px 12px;border-radius:8px;font-weight:700;font-size:14px;
+      backdrop-filter:blur(2px);
+    }
+
+    .detail-body::-webkit-scrollbar{height:8px}
+    .bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background-color: #e0d6cf;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  border-top: 1px solid #ccc;
+  height: 70px;
+  z-index: 999;
+}
+
+.bottom-nav a {
+  text-decoration: none;
+  color: #8b5e3c;
+  font-size: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-weight: 700;
+  font-family: "Noto Serif TC", "Segoe UI", sans-serif;
+}
+
+.bottom-nav img {
+  width: 24px;
+  height: 24px;
+  margin-bottom: 0;
+  display: block;
+}
+    @media (max-width:520px) {
+      .icon { width: 24px; height: 24px; }
+      .feature p { font-size: 15px; }
+      .bottom-nav { height: 64px; }
+      .bottom-nav a { font-size: 11px; }
+      .bottom-nav img { width: 20px; height: 20px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="container" role="main" aria-label="廟埕分類卡片">
+    <section class="temple-cards" aria-label="廟埕分類卡片列表">
+
+      <!-- 媽祖廟（已存在） -->
+      <article class="card" tabindex="0"
+               data-title="媽祖廟、天后宮"
+               data-image="https://www.twtainan.net/content/images/attractions/87860/1024x768_attractions-image-kgrhpveoqk6dpzuf37y1mq.jpg"
+               data-content="媽祖廟是主要奉祀海神媽祖的廟宇，另又稱天后宮、天妃宮、天后祠、天后寺、天后廟、聖母廟等。日本又稱天妃神社，常見於中國大陸沿海及香港、澳門、臺灣等地，在東亞及東南亞其他地區如日本、琉球、越南等地以及東亞裔人士之海外聚居地，臺灣則是媽祖信仰最盛的地方。四川盆地內的天后宮，又名福建會館，多係湖廣填四川時，來自福建之客家先民所建，而天后媽祖也從海神演化成水運之神，甚至是無所不能的萬能神靈。從華南、華東以至全中國的海岸都有拜媽祖的信仰，認為可保航海順利，所以天后廟大多其正門都朝海。相傳，媽祖於宋代建隆元年（960年）3月23日出生於福建泉州莆田縣的湄洲島，出生時已有特殊徵兆：紅光滿室，香氣四溢；出生至滿月均沒有啼哭過，故取名林默。林默自童年起即有預測天氣的異能，常於海難發生時前往救人，雍熙四年（987年）27歲時於鄉間湄洲峰上羽化升天。其後每多顯靈，於海濱救人無數，於是沿海鄉民紛紛立廟祀奉，歷代君主都賜以頭銜，尊為天妃，直至康熙22年（1683年）福建水師施琅攻打台灣鄭克塽，因戰船擱淺，清朝軍人乃向天妃禱告因而脫險。康熙帝知道後將天妃改加為「天后」，此後天后成為中國及東南亞華人社會裏漁民和所有航海者普遍的守護神，有些漁民更會把孩子和天后「上契」。現今祖籍福建的林姓人士，多普遍認同天后是他們的祖先而尊稱為「天后聖姑」。"
+               aria-labelledby="c1">
+        <img src="https://www.twtainan.net/content/images/attractions/87860/1024x768_attractions-image-kgrhpveoqk6dpzuf37y1mq.jpg" alt="媽祖廟、天后宮">
+        <div class="card-body">
+          <h4 id="c1">媽祖廟、天后宮</h4>
+          <p>主祀媽祖，為海港與漁村社群祈求平安與順利，常見遶境與海祭活動</p>
+        </div>
+      </article>
+
+      <!-- 城隍廟（使用者提供全文） -->
+      <article class="card" tabindex="0"
+               data-title="城隍廟"
+               data-image="https://www.travel.taipei/content/images/attractions/155558/1024x768_attractions-image-s-qetzhj9kim1uqrqupgfg.jpg"
+               data-content="城隍廟是祭祀城隍的廟宇。在中國、朝鮮半島、越南文化中，城隍是城池守護神，其前身是水庸神。城隍，有的地方又稱城隍爺；起源於古代的水（隍）庸（城）的祭祀，為《周禮》八神之一。「城」原指挖土築的高牆，「隍」原指沒有水的護城壕。城隍爺是冥界的地方官，職權相當於陽界的縣令。城隍廟並不是每個城市都有，只有縣治以上層級的城市才能設有官方的城隍廟。所謂陰廟，在道教上來說，是指祭祀無主孤魂的廟。而祭祀陰界神明的廟宇，如城隍廟、地藏庵、東嶽殿、閻羅宮等，亦為神廟而非陰廟。兩者不可混淆，亦不可同日而語。城隍廟源自城隍神信仰。周朝天子祭祀「八蜡」中的「水庸」，被認為是祭祀城隍之始，但與後世城隍信仰情況不太相同。相傳三國時代的吳國曾建城隍廟，根據《隋書》的記載，南北朝時民間信仰中城隍神已較為普遍。漢唐時，道教成形，城隍神信仰也被吸收到道教神祇體系當中。由於道教的普及，城隍信仰大盛，各地相繼建設城隍廟。元朝時在京城大都（今北京）建城隍廟。明朝開國皇帝朱元璋因出生於土地廟，所以對土地神的上司城隍神便格外崇敬，在明洪武二年（1369年），朱元璋下詔加封天下城隍，並嚴格規定了城隍的等級，共分為都、府、州、縣四級，於是全國各地的城隍廟便如雨後春筍般一下子修了起來。"
+               aria-labelledby="c2">
+        <img src="https://www.travel.taipei/content/images/attractions/155558/1024x768_attractions-image-s-qetzhj9kim1uqrqupgfg.jpg" alt="城隍廟">
+        <div class="card-body">
+          <h4 id="c2">城隍廟</h4>
+          <p>供奉城隍爺，為地方守護與陰陽事務之神，為區域性祭祀中心</p>
+        </div>
+      </article>
+
+      <!-- 關帝廟（已更新來源連結至關帝條目） -->
+      <article class="card" tabindex="0"
+               data-title="關帝廟、關公廟"
+               data-image="https://i0.wp.com/yingtingshih.com/wp-content/uploads/2022/03/20220324211227_45.jpg?resize=1000%2C670&quality=100&ssl=1"
+               data-content="關帝廟，又稱武廟、武聖廟、文衡廟、協天宮、恩主公廟等，是祭祀中國三國時代將領關羽的祠廟。而關帝之稱來自明朝皇帝授予關羽的「關聖帝君」封號。關羽為中國佛教、道教神明、聖賢中最多祠廟的一位。關帝廟不僅遍佈中國大陸、港澳及臺灣，且在漢字文化圈內各地區包括朝鮮半島、日本、越南等，以至南洋地區如馬來西亞、柬埔寨、印尼等地也有供奉。今日僅在中國大陸老北京城裏，就有一百多座專供或兼供關公的廟宇。每年關公節都會有多間武館到那表演。中國古代祭祀的戰神本是「兵主」蚩尤。就公家的祭祀言，唐初開始便有武廟，但主祀的是周朝的政治人物兼將領姜子牙，而關羽則為從祀。至遲宋朝末年，民間供奉關羽的廟宇已經「郡國州縣、鄉邑間井皆有」。清代，軍隊對關羽的崇拜達到極盛。不僅在關內各省，在藩部各地凡有八旗、綠營駐軍之處，也普遍修建關帝廟。由於關羽不僅受到儒家的崇祀，同時又受到道教、佛家的膜拜，所以關羽是橫貫儒、道、佛三大中國教派的神祇。"
+               aria-labelledby="c3">
+        <img src="https://i0.wp.com/yingtingshih.com/wp-content/uploads/2022/03/20220324211227_45.jpg?resize=1000%2C670&quality=100&ssl=1" alt="關帝廟、關公廟">
+        <div class="card-body">
+          <h4 id="c3">關帝廟、關公廟</h4>
+          <p>供奉關聖帝君關羽，象徵忠義與威信，深受儒、道、佛三教與各界崇敬</p>
+        </div>
+      </article>
+
+      <!-- 土地公廟（使用者提供全文） -->
+      <article class="card" tabindex="0"
+               data-title="土地公廟、福德祠"
+               data-image="https://i0.wp.com/yingtingshih.com/wp-content/uploads/pixnet/4c38dd0e7fca9123d22337095bfe5e25.jpg?w=1290&quality=100&ssl=1"
+               data-content="土地廟，又稱土地公廟、福德廟或伯公廟，為民間供奉土地公的地方（廟宇），多於民間自發建立的小型建築，屬於分佈最廣的祭祀的建築，鄉村各地均有分佈。在1949年以前，凡有漢人居住的地方就有供奉土地神地方——土地廟。土地廟在中國大陸曾由於「文革」作為「四舊」大部分被搗毀。隨著「改革開放」和開始信仰自由以後，自1980年前後有蒸蒸日上的恢復民間信仰和社會的逐漸發展，便有一股建設土地廟的浪潮。這些土地廟多由農民自發組織建設的信仰中心，屬於微型建築，高度從不到2米至正常房屋高度；面積大小小則幾平方米，大則十幾平方米。1980年代和1990年代大陸官方和媒體一直密切關注這股建設土地廟的浪潮，就以當時農村小學基礎教育設施落後為藉口和理由，來呼籲鄉民多關注鄉村基礎教育，集中精力投資建學校，不要熱衷於「迷信」，但仍舊無法破壞民間信仰的力量。部分地區官方就以破除迷信為藉口而進行強行拆除，這股土地廟信仰復興的熱潮最終還是被大陸官方鎮壓了。然而實際上至2000年以後，幾乎每鄉至少有一處或多處，其數量分佈因地而異。台灣因為擁有宗教信仰自由所以有相當多的土地廟；據官方的調查，其數量超過1300所以上。與農村地區的土地廟相對的，是供奉城市守護神的城隍廟。"
+               aria-labelledby="c4">
+        <img src="https://i0.wp.com/yingtingshih.com/wp-content/uploads/pixnet/4c38dd0e7fca9123d22337095bfe5e25.jpg?w=1290&quality=100&ssl=1" alt="土地公廟、福德祠">
+        <div class="card-body">
+          <h4 id="c4">土地公廟、福德祠</h4>
+          <p>居民日常拜祭以求地利與家宅平安</p>
+        </div>
+      </article>
+
+      <!-- 佛教寺院（含竹林山觀音寺說明） -->
+      <article class="card" tabindex="0"
+               data-title="佛教寺院、觀音寺"
+               data-image="https://newtaipei.travel/content/images/attractions/25053/1024x768_attractions-image-xf9pl4mjv0-vsahw12ywfw.jpg"
+               data-content="佛寺（梵語: Vihāra, 巴利語: Vihāra）、招提寺，通稱寺院、寺，是佛教宗教建築物、僧伽居住、修行的地方。寺中常有佛塔（浮屠塔）（stūpa）。竹林山觀音寺:簡稱竹林山寺，又稱林口觀音媽廟、林口廟或竹林寺。為臺灣一所觀音寺，是林口、蘆竹、龜山三個地區的信仰中心，香火鼎盛，也是著名景點，位於新北市林口區竹林路325號。原為日式建築，後改建為傳統本國式樣的寺廟。正殿內除主神十八手觀音（侍神：善才龍女）以外，有文殊菩薩、普賢菩薩陪祀兩旁，伽藍菩薩、韋馱菩薩戍守兩側，正殿東西則分別塑有關聖帝君、文昌帝君、玄壇真君以及天上聖母、註生娘娘、福德正神等神像。左偏殿一樓祀南北斗星君及文魁星君，二樓祀地藏菩薩。右偏殿一樓祀斗姥元君、太歲星君，二樓祀至聖先師、神農大帝、消災延壽藥師佛。"
+               aria-labelledby="c5">
+        <img src="https://newtaipei.travel/content/images/attractions/25053/1024x768_attractions-image-xf9pl4mjv0-vsahw12ywfw.jpg" alt="佛教寺院、觀音寺">
+        <div class="card-body">
+          <h4 id="c5">佛教寺院、觀音寺</h4>
+          <p>以佛教法會與修持為主，常供奉觀音菩薩，舉辦禪修與共修活動</p>
+        </div>
+      </article>
+
+      <!-- 王爺廟 -->
+      <article class="card" tabindex="0"
+               data-title="王爺廟"
+               data-image="https://live.staticflickr.com/65535/49644705707_a21ff2e8f3_b.jpg"
+               data-content="王爺廟，通常指奉祀王爺千歲為主祀或配祀神祇之廟宇。王爺（千歲）源自古代皇帝派遣欽差大臣巡狩地方，後衍生出代表玉皇上帝巡察人間善惡的神祇，能為百姓驅除瘟疫與魑魅，奉旨領有尚方寶劍先斬後奏。在臺灣或閩南有許多主祀千歲的廟宇，而奉玉旨行事之處稱為「代天府」，千歲奉玉旨出巡則亦稱為「代天巡狩」，這些廟裡的千歲一般只稱姓氏，不稱其名，共有上百餘種姓氏，稱為「某府王爺」或「某府千歲」，俗說有三百六十進士化身的千歲，共一百三十二姓。臺灣的王爺信仰相當盛行，尤其是台灣王爺信仰發源的南臺灣。「王爺千歲信仰」與臺灣北部的城隍信仰、臺灣中部的媽祖信仰並稱，俗曰：「南王爺、中媽祖、北城隍」，又另一稱「三月瘋媽祖、四月王爺生」。據1960年代所作的調查分析，全臺宮寺廟所供奉之主神共有二百四十七種之多，其中具有廿座以上的寺廟者有廿九種，超過一百座以上的有九種神明，最多的是千歲（另稱王爺），共有七百一十七座以上，足見王爺信仰的普遍，屬臺灣民間「強勢信仰」，無論千歲、王爺數或廟宇數量均居全臺之冠。"
+               aria-labelledby="c6">
+        <img src="https://live.staticflickr.com/65535/49644705707_a21ff2e8f3_b.jpg" alt="王爺廟">
+        <div class="card-body">
+          <h4 id="c6">王爺廟</h4>
+          <p>供奉地方王爺或民間守護神</p>
+        </div>
+      </article>
+
+      <!-- 祖廟、祠堂 -->
+      <article class="card" tabindex="0"
+               data-title="祖廟、祠堂"
+               data-image="https://i0.wp.com/yingtingshih.com/wp-content/uploads/2022/04/20220428214131_38.jpg?resize=1000%2C670&quality=100&ssl=1"
+               data-content="祠堂，又稱家廟、祖堂、公廳，是基於宗法制度，用於供奉和祭祀祖先的祠，其又具有從事家族宣傳、執行族規家法、議事宴飲的功能。用於舉辦家族內子孫的婚、喪、壽、喜等事，還可以作為私塾使用。祠堂屬於族產中的不動產。其附屬的耕地，即祠堂田、祠田，為族田的一類。現代，中國大陸祠堂的所有權因中華人民共和國土地制度的演進而多有變化，臺灣的祠堂與祭田等不動產則多轉化為祭祀公業。上古時代，只有天子才可立祠，其他任何人均不可立祠。到了周代以後，諸侯、士大夫和品官們也可在家立祠祭祖，平民百姓們則只能以把祖先的畫像、泥塑像或神主牌位供奉在墓旁稱為「功德祠」的寺廟的方式來祭祖。"
+               aria-labelledby="c7">
+        <img src="https://i0.wp.com/yingtingshih.com/wp-content/uploads/2022/04/20220428214131_38.jpg?resize=1000%2C670&quality=100&ssl=1" alt="祖廟、祠堂">
+        <div class="card-body">
+          <h4 id="c7">祖廟、祠堂</h4>
+          <p>家族或宗族祭祀場所</p>
+        </div>
+      </article>
+
+      <!-- 道教、民間綜合廟宇 -->
+      <article class="card" tabindex="0"
+               data-title="道教、民間綜合廟宇"
+               data-image="https://ivy31025.com/wp-content/uploads/2018/03/1522060455-3f9c1c62396936ae66cd5cc7ca3788eb.jpg"
+               data-content="由於文化上的包容性，不論是古代的自然崇拜、儒家的倫理、釋家的慈悲、道家的儀式，都能巧妙地融為一爐，並沒有一定的界線；有時同一神祇可能在不同的教派領域中，各以不同的名稱出現，就連儀式上也會出現佛、道並容的場面。許多神明在先民遠渡重洋，來到臺灣定居後，逐漸展現臺灣特有的宗教特色，如對媽祖的崇拜，源自移民祈求航海平安的庇佑；又如早期移民衛生條件差，醫療普遍缺乏，經常瘟疫橫行，人們為祛禍祈福，普遍祀奉瘟王，至今臺灣各地王爺廟即為明證。神明特質因需要而改變，以媽祖為例，原本只在漁民之間信奉，日後逐漸演變為人民的守護神；客家人祀奉的三山國王，原本只是地方神祇，卻因客家人墾荒過程中，須山神庇佑開山順利而成為客家人的重要神祇。"
+               aria-labelledby="c8">
+        <img src="https://ivy31025.com/wp-content/uploads/2018/03/1522060455-3f9c1c62396936ae66cd5cc7ca3788eb.jpg" alt="道教、民間綜合廟宇">
+        <div class="card-body">
+          <h4 id="c8">道教、民間綜合廟宇</h4>
+          <p>可能同時供奉多位神祇</p>
+        </div>
+      </article>
+
+    </section>
+  </main>
+
+  <!-- Overlay 詳情視窗 -->
+  <div id="overlay" class="overlay" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="detail-title">
+    <div class="detail" role="document">
+      <div class="detail-media" id="detail-media">
+        <div class="caption-top" id="detail-caption" style="display:none">標題</div>
+        <img id="detail-image" src="" alt="">
+      </div>
+      <div class="detail-body">
+        <div class="detail-title">
+          <h2 id="detail-title">標題</h2>
+          <div>
+            <button id="closeBtn" class="detail-close" aria-label="關閉詳情">&times;</button>
+          </div>
+        </div>
+
+        <p id="detail-content">內容文字</p>
+
+        <div class="detail-source" id="detail-source">資料來源</div>
+
+        <div class="detail-footer">
+          <button class="btn-muted" id="prevBtn" aria-label="上一筆">上一筆</button>
+          <button class="btn-muted" id="nextBtn" aria-label="下一筆">下一筆</button>
+          <button class="btn-primary" id="openFull" aria-label="開啟原始圖片">查看原圖</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <nav class="bottom-nav" role="navigation" aria-label="底部分頁列">
+  <a href="index.html">
+    <img src="https://cdn-icons-png.flaticon.com/512/1946/1946488.png" alt="首頁">
+    首頁
+  </a>
+  <a href="achievement.html">
+    <img src="https://cdn-icons-png.flaticon.com/512/1828/1828970.png" alt="成就">
+    成就區
+  </a>
+  <a href="notifications.html">
+    <img src="https://cdn-icons-png.flaticon.com/512/1827/1827392.png" alt="通知">
+    通知
+  </a>
+  <a href="settings.html">
+    <img src="https://cdn-icons-png.flaticon.com/512/2099/2099058.png" alt="設定">
+    設定
+  </a>
+</nav>
+
+  <script>
+    (function(){
+      const cards = Array.from(document.querySelectorAll('.card'));
+      const overlay = document.getElementById('overlay');
+      const detailImage = document.getElementById('detail-image');
+      const detailTitle = document.getElementById('detail-title');
+      const detailContent = document.getElementById('detail-content');
+      const detailCaption = document.getElementById('detail-caption');
+      const detailSource = document.getElementById('detail-source');
+      const closeBtn = document.getElementById('closeBtn');
+      const prevBtn = document.getElementById('prevBtn');
+      const nextBtn = document.getElementById('nextBtn');
+      const openFull = document.getElementById('openFull');
+
+      let currentIndex = -1;
+
+      function openDetail(index){
+        const card = cards[index];
+        if (!card) return;
+        const title = card.getAttribute('data-title') || card.querySelector('h4')?.textContent || '';
+        const img = card.getAttribute('data-image') || card.querySelector('img')?.src || '';
+        const content = card.getAttribute('data-content') || card.querySelector('p')?.textContent || '';
+
+        detailTitle.textContent = title;
+        detailCaption.textContent = title;
+        detailCaption.style.display = 'block';
+        detailImage.src = img;
+        detailImage.alt = title + ' 圖片';
+        detailContent.textContent = content;
+
+        // 根據標題顯示指定來源（使用者提供的來源）
+        if (title.includes('媽祖')) {
+          detailSource.innerHTML = '資料來源: <a href="https://zh.wikipedia.org/zh-tw/%E5%AA%BD%E7%A5%96%E5%BB%9F" target="_blank" rel="noopener">https://zh.wikipedia.org/zh-tw/%E5%AA%BD%E7%A5%96%E5%BB%9F</a>';
+        } else if (title.includes('城隍')) {
+          detailSource.innerHTML = '資料來源: <a href="https://zh.wikipedia.org/wiki/%E5%9F%8E%E9%9A%8D%E5%BA%99" target="_blank" rel="noopener">https://zh.wikipedia.org/wiki/%E5%9F%8E%E9%9A%8D%E5%BA%99</a>';
+        } else if (title.includes('關帝')) {
+          detailSource.innerHTML = '資料來源: <a href="https://zh.wikipedia.org/wiki/%E9%97%9C%E5%B8%9D%E5%BB%9F" target="_blank" rel="noopener">https://zh.wikipedia.org/wiki/%E9%97%9C%E5%B8%9D%E5%BB%9F</a>';
+        } else if (title.includes('土地公')) {
+          detailSource.innerHTML = '資料來源: <a href="https://zh.wikipedia.org/wiki/%E5%9C%9F%E5%9C%B0%E5%BB%9F" target="_blank" rel="noopener">https://zh.wikipedia.org/wiki/%E5%9C%9F%E5%9C%B0%E5%BB%9F</a>';
+        } else if (title.includes('佛教') || title.includes('觀音')) {
+          detailSource.innerHTML = '資料來源: <a href="https://zh.wikipedia.org/zh-tw/%E7%AB%B9%E6%9E%97%E5%B1%B1%E8%A7%80%E9%9F%B3%E5%AF%BA" target="_blank" rel="noopener">https://zh.wikipedia.org/zh-tw/%E7%AB%B9%E6%9E%97%E5%B1%B1%E8%A7%80%E9%9F%B3%E5%AF%BA</a>';
+        } else if (title.includes('王爺')) {
+          detailSource.innerHTML = '資料來源: <a href="https://zh.wikipedia.org/wiki/%E7%8E%8B%E7%88%BA%E5%BB%9F" target="_blank" rel="noopener">https://zh.wikipedia.org/wiki/%E7%8E%8B%E7%88%BA%E5%BB%9F</a>';
+        } else if (title.includes('祖廟') || title.includes('祠堂')) {
+          detailSource.innerHTML = '資料來源: <a href="https://zh.wikipedia.org/wiki/%E7%A5%A0%E5%A0%82" target="_blank" rel="noopener">https://zh.wikipedia.org/wiki/%E7%A5%A0%E5%A0%82</a>';
+        } else {
+          detailSource.innerHTML = '資料來源: <a href="https://www.ey.gov.tw/state/D00B53C98CD4F08F/ebdc93b1-e9df-4bf4-8bfe-c6374a0f811f" target="_blank" rel="noopener">https://www.ey.gov.tw/state/D00B53C98CD4F08F/ebdc93b1-e9df-4bf4-8bfe-c6374a0f811f</a>';
+        }
+
+        currentIndex = index;
+        overlay.setAttribute('aria-hidden','false');
+        closeBtn.focus();
+
+        prevBtn.disabled = (currentIndex <= 0);
+        nextBtn.disabled = (currentIndex >= cards.length - 1);
+
+        document.documentElement.style.overflow = 'hidden';
+        document.body.style.overflow = 'hidden';
+      }
+
+      function closeDetail(){
+        overlay.setAttribute('aria-hidden','true');
+        detailImage.src = '';
+        detailCaption.style.display = 'none';
+        currentIndex = -1;
+        document.documentElement.style.overflow = '';
+        document.body.style.overflow = '';
+      }
+
+      cards.forEach((card, i) => {
+        card.addEventListener('click', () => openDetail(i));
+        card.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openDetail(i); }
+        });
+      });
+
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) closeDetail();
+      });
+
+      closeBtn.addEventListener('click', closeDetail);
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && overlay.getAttribute('aria-hidden') === 'false') closeDetail();
+        if (overlay.getAttribute('aria-hidden') === 'false') {
+          if (e.key === 'ArrowLeft') prevBtn.click();
+          if (e.key === 'ArrowRight') nextBtn.click();
+        }
+      });
+
+      prevBtn.addEventListener('click', () => {
+        if (currentIndex > 0) openDetail(currentIndex - 1);
+      });
+      nextBtn.addEventListener('click', () => {
+        if (currentIndex < cards.length - 1) openDetail(currentIndex + 1);
+      });
+
+      openFull.addEventListener('click', () => {
+        if (detailImage.src) window.open(detailImage.src, '_blank', 'noopener');
+      });
+
+      detailImage.addEventListener('error', () => {
+        detailImage.alt = '圖片載入失敗';
+        detailImage.style.objectFit = 'contain';
+        detailImage.style.background = '#f2f0ee';
+      });
+
+      (function addSwipe(el){
+        let startX = null;
+        let startY = null;
+        let isMoving = false;
+        el.addEventListener('touchstart', (e) => {
+          if (e.touches.length === 1) {
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+            isMoving = true;
+          }
+        }, {passive:true});
+        el.addEventListener('touchmove', (e) => {
+          if (!isMoving) return;
+          const dx = e.touches[0].clientX - startX;
+          const dy = e.touches[0].clientY - startY;
+          if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 30) {
+            if (dx > 0) prevBtn.click(); else nextBtn.click();
+            isMoving = false;
+          }
+        }, {passive:true});
+        el.addEventListener('touchend', () => { isMoving=false; startX=null; startY=null; });
+      })(document.getElementById('detail-media'));
+
+    })();
+  </script>
+</body>
+</html>
